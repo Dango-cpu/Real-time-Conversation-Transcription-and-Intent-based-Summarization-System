@@ -1,24 +1,20 @@
 {
-  "name": "real-time-voice-translator",
+  "name": "voxly-conversation-system",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
+  "engines": { "node": ">=20.0.0" },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "npm run build:css && node --watch src/server.js",
+    "start": "node src/server.js",
+    "build:css": "tailwindcss -i ./src/public/css/input.css -o ./src/public/css/app.css --minify",
+    "watch:css": "tailwindcss -i ./src/public/css/input.css -o ./src/public/css/app.css --watch"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "typescript": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "react-router-dom": "latest",
-    "lucide-react": "latest",
-    "tailwindcss": "3.4.17",
-    "postcss": "latest",
-    "autoprefixer": "latest"
+    "@supabase/supabase-js": "^2.50.0",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "express-handlebars": "^8.0.1"
   },
-  "devDependencies": {}
+  "devDependencies": { "tailwindcss": "^3.4.17" }
 }
