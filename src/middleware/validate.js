@@ -1,4 +1,5 @@
 const languages = ['Auto Detect','Vietnamese','English','Japanese','Korean','Chinese','English (detected)']
+const speechModels = ['cnn-bilstm-ctc','simplified-deepspeech','seq2seq-encoder-decoder']
 const fail = (res,message) => res.status(400).json({success:false,error:{code:'VALIDATION_ERROR',message}})
 export function validateConversation(req,res,next) {
   const body = req.body
@@ -16,6 +17,7 @@ export function validateConversation(req,res,next) {
 }
 export function validateProcessing(req,res,next) {
   if (!req.body || !languages.includes(req.body.target_language)) return fail(res,'A valid target_language is required.')
+  if (!speechModels.includes(req.body.speech_model)) return fail(res,'A valid speech_model is required.')
   next()
 }
 export function validateInsights(req,res,next) {
