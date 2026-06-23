@@ -1,63 +1,62 @@
-# Voximi — Conversation transcription demo
+# Model 1: CNN + Bi-LSTM + CTC
 
-Ứng dụng Node.js + Express + Handlebars để thu âm hội thoại bằng microphone, trình bày transcript/bản dịch và tạo insight dạng demo. Giao diện dùng Tailwind CSS và JavaScript thuần; dữ liệu dùng Supabase khi được cấu hình, nếu không sẽ tự chuyển sang mock in-memory và không bị crash.
+This folder contains the code for the report's first Speech-to-Text candidate:
 
-## Yêu cầu
+`Audio -> MFCC -> CNN + Bi-LSTM + CTC -> transcript`
 
-- Node.js 20 trở lên
-- npm 10 trở lên (khuyến nghị)
-- Trình duyệt hỗ trợ `MediaRecorder` và `getUserMedia`
+The implementation is intentionally separate from the Express demo so it can be
+trained and evaluated in a notebook or CLI workflow, then called by the app once
+a checkpoint is available.
 
-## Cài đặt và chạy
+## Files
 
-```bash
-npm install
-npm run dev
+- `model.py`: CNN + Bi-LSTM + CTC acoustic model.
+- `text.py`: character vocabulary, CTC encoding, and decoding helpers.
+- `features.py`: MFCC extraction from waveform files or base64 audio.
+- `metrics.py`: WER and real-time-factor helpers.
+- `train.py`: CSV-driven training script.
+- `infer.py`: JSON stdin/stdout inference bridge used by the Node app.
+
+## Dataset CSV
+
+Training and evaluation scripts expect a UTF-8 CSV with:
+
+```csv
+audio_path,transcript
+data/sample_001.wav,hello everyone welcome to the meeting
+data/sample_002.wav,we will review the launch plan today
 ```
 
-Mở `http://localhost:3000`. Chạy production bằng:
+Use lowercase normalized transcripts for best CTC convergence.
+
+## Install
+
+Install the ML dependencies in the environment where you train or run inference:
 
 ```bash
-npm start
+pip install torch torchaudio
 ```
 
-Các script:
+## Train
 
-- `npm run dev`: build CSS rồi chạy Node watch mode.
-- `npm start`: chạy production server.
+```bash
+python model_1/train.py --train_csv data/train.csv --valid_csv data/valid.csv --epochs 30 --checkpoint artifacts/model1.pt
+```
 
-## Biến môi trường
+## Infer
 
-Tạo `.env` từ `.env.example`:
+```bash
+echo {"audio_path":"data/example.wav","checkpoint":"artifacts/model1.pt"} | python model_1/infer.py
+```
+
+The Express app can call this bridge when these environment variables are set:
 
 ```env
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key
-PORT=3000
+MODEL1_STT_ENABLED=true
+MODEL1_PYTHON=python
+MODEL1_SCRIPT=model_1/infer.py
+MODEL1_CHECKPOINT=artifacts/model1.pt
 ```
 
-
-## API
-
-- `GET /api/status`
-- `GET /api/conversations`
-- `GET /api/conversations/:id`
-- `POST /api/conversations`
-- `DELETE /api/conversations/:id`
-- `POST /api/processing/transcribe`
-- `POST /api/processing/summarize`
-
-Response luôn dùng dạng `{ success, data, meta }`; lỗi dùng `{ success: false, error: { code, message } }`.
-
-## Phần đang mock và cách tích hợp AI thật
-
-Microphone được thu thật bằng `MediaRecorder`, nhưng audio chưa được gửi tới mô hình. Transcript, translation, intent và summary được tạo bởi adapter mock, có ghi rõ trong metadata API và giao diện.
-
-Thay nội dung các adapter sau để tích hợp Whisper, OpenAI hoặc provider khác mà không cần đổi UI/API contract:
-
-- `src/services/speechToTextService.js`
-- `src/services/translationService.js`
-- `src/services/intentAnalysisService.js`
-- `src/services/summarizationService.js`
-
-Với audio thật, nên dùng multipart upload hoặc streaming WebSocket, kiểm tra MIME/kích thước và lưu file ngoài process thay vì nhúng base64 vào JSON.
+If the variables, checkpoint, or real audio payload are missing, the web demo
+falls back to the existing mock transcript.
